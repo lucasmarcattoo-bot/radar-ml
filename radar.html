@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radar de Oportunidades — Mercado Livre</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',sans-serif; background:#f0f2f5; color:#333; }
+
+/* SIDEBAR */
+.sidebar {
+  width:230px; background:linear-gradient(180deg,#1a1a2e,#16213e,#0f3460);
+  height:100vh; position:fixed; left:0; top:0;
+  display:flex; flex-direction:column; z-index:100;
+  box-shadow:4px 0 15px rgba(0,0,0,.3);
+}
+.sidebar-logo {
+  padding:22px 18px; border-bottom:1px solid rgba(255,255,255,.1);
+  display:flex; align-items:center; gap:12px;
+}
+.logo-icon {
+  width:42px; height:42px;
+  background:linear-gradient(135deg,#FFE600,#FF7733);
+  border-radius:10px; display:flex; align-items:center;
+  justify-content:center; font-size:22px;
+}
+.logo-text { color:#fff; font-size:13px; font-weight:700; line-height:1.3; }
+.logo-sub  { color:rgba(255,255,255,.45); font-size:10px; }
+.sidebar-menu { padding:18px 0; flex:1; overflow-y:auto; }
+.menu-label {
+  color:rgba(255,255,255,.3); font-size:10px; font-weight:700;
+  letter-spacing:1.5px; padding:10px 18px; text-transform:uppercase;
+}
+.menu-item {
+  display:flex; align-items:center; gap:11px; padding:11px 18px;
+  color:rgba(255,255,255,.6); cursor:pointer; transition:.2s;
+  font-size:13px; border-left:3px solid transparent;
+}
+.menu-item:hover,.menu-item.active {
+  background:rgba(255,255,255,.08); color:#fff; border-left-color:#FFE600;
+}
+.menu-item.active { color:#FFE600; }
+.menu-icon { font-size:15px; width:20px; text-align:center; }
+
+.sidebar-footer {
+  padding:16px 18px; border-top:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.3); font-size:10px; text-align:center;
+}
+
+/* MAIN */
+.main { margin-left:230px; min-height:100vh; display:flex; flex-direction:column; }
+
+/* TOPBAR */
+.topbar {
+  background:#fff; padding:14px 26px;
+  display:flex; align-items:center; justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.06); position:sticky; top:0; z-index:50;
+}
+.topbar-left h1 { font-size:17px; font-weight:800; color:#1a1a2e; }
+.topbar-left p  { font-size:11px; color:#999; margin-top:2px; }
+.topbar-right   { display:flex; align-items:center; gap:10px; }
+
+.last-update {
+  font-size:11px; color:#aaa; background:#f8f8f8;
+  padding:6px 12px; border-radius:8px;
+}
+
+/* CONTENT */
+.content { padding:22px 26px; flex:1; }
+
+/* SEARCH BOX */
+.search-section {
+  background:#fff; border-radius:16px; padding:24px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07); margin-bottom:22px;
+}
+.search-section h2 { font-size:15px; font-weight:800; color:#1a1a2e; margin-bottom:6px; }
+.search-section p  { font-size:12px; color:#aaa; margin-bottom:18px; }
+
+.search-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+
+.input-group { display:flex; flex-direction:column; gap:5px; flex:1; min-width:160px; }
+.input-group label { font-size:11px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:.5px; }
+.input-group input, .input-group select {
+  padding:10px 14px; border:1.5px solid #e8e8e8; border-radius:10px;
+  font-size:13px; color:#333; background:#fff; outline:none; transition:.2s;
+}
+.input-group input:focus, .input-group select:focus { border-color:#FFE600; box-shadow:0 0 0 3px rgba(255,230,0,.12); }
+
+.btn-search {
+  padding:10px 24px; background:linear-gradient(135deg,#FFE600,#FF7733);
+  border:none; border-radius:10px; font-size:13px; font-weight:700;
+  color:#1a1a2e; cursor:pointer; transition:.2s; white-space:nowrap;
+  display:flex; align-items:center; gap:8px; align-self:flex-end;
+}
+.btn-search:hover { opacity:.85; transform:translateY(-1px); }
+.btn-search:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+.btn-refresh {
+  padding:10px 18px; background:#1a1a2e; border:none; border-radius:10px;
+  font-size:13px; font-weight:700; color:#FFE600; cursor:pointer;
+  transition:.2s; display:flex; align-items:center; gap:8px; align-self:flex-end;
+}
+.btn-refresh:hover { background:#0f3460; }
+.btn-refresh:disabled { opacity:.5; cursor:not-allowed; }
+
+/* CHIPS DE SUGESTÃO */
+.suggestions {
+  display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;
+}
+.chip {
+  padding:5px 12px; background:#f0f4ff; border:1.5px solid #dde4ff;
+  border-radius:20px; font-size:11px; font-weight:600; color:#3d5af1;
+  cursor:pointer; transition:.2s;
+}
+.chip:hover { background:#dde4ff; }
+
+/* LOADING */
+.loading-overlay {
+  display:none; flex-direction:column; align-items:center;
+  justify-content:center; padding:60px; gap:16px;
+}
+.loading-overlay.active { display:flex; }
+.spinner {
+  width:48px; height:48px;
+  border:4px solid #f0f0f0; border-top-color:#FFE600;
+  border-radius:50%; animation:spin .8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { font-size:14px; color:#888; font-weight:600; }
+.loading-sub  { font-size:12px; color:#bbb; }
+
+/* SUMMARY CARDS */
+.summary-grid {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:20px;
+}
+.sum-card {
+  background:#fff; border-radius:13px; padding:16px;
+  box-shadow:0 2px 10px rgba(0,0,0,.06); border-top:3px solid;
+  text-align:center;
+}
+.sum-card:nth-child(1) { border-top-color:#4CAF50; }
+.sum-card:nth-child(2) { border-top-color:#2196F3; }
+.sum-card:nth-child(3) { border-top-color:#FF9800; }
+.sum-card:nth-child(4) { border-top-color:#9C27B0; }
+.sum-card:nth-child(5) { border-top-color:#F44336; }
+.sum-icon  { font-size:24px; margin-bottom:6px; }
+.sum-value { font-size:20px; font-weight:800; color:#1a1a2e; }
+.sum-label { font-size:10px; color:#aaa; font-weight:600; text-transform:uppercase; margin-top:3px; }
+
+/* CHARTS ROW */
+.charts-row { display:grid; gap:16px; margin-bottom:16px; }
+.cr-2 { grid-template-columns:1.4fr 1fr; }
+.cr-3 { grid-template-columns:1fr 1fr 1fr; }
+
+.chart-card {
+  background:#fff; border-radius:14px; padding:20px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+.chart-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.chart-title  { font-size:13px; font-weight:800; color:#1a1a2e; }
+.chart-sub    { font-size:11px; color:#bbb; margin-top:2px; }
+.chart-badge  { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.bg-green  { background:#E8F5E9; color:#388E3C; }
+.bg-blue   { background:#E3F2FD; color:#1565C0; }
+.bg-orange { background:#FFF3E0; color:#E65100; }
+.bg-purple { background:#F3E5F5; color:#6A1B9A; }
+.bg-red    { background:#FFEBEE; color:#B71C1C; }
+
+/* RESULTS TABLE */
+.results-section {
+  background:#fff; border-radius:14px; padding:20px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06); margin-bottom:16px;
+}
+.section-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+}
+.section-title { font-size:14px; font-weight:800; color:#1a1a2e; }
+.section-sub   { font-size:11px; color:#bbb; margin-top:2px; }
+
+.filter-tabs { display:flex; gap:6px; }
+.tab-btn {
+  padding:6px 14px; border-radius:8px; font-size:11px; font-weight:700;
+  border:1.5px solid #e8e8e8; background:#fff; cursor:pointer; transition:.2s; color:#888;
+}
+.tab-btn.active { background:#1a1a2e; color:#FFE600; border-color:#1a1a2e; }
+
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead tr { background:#f8f9ff; }
+th {
+  padding:10px 12px; text-align:left; font-size:10px; font-weight:700;
+  color:#999; text-transform:uppercase; letter-spacing:.5px;
+  border-bottom:2px solid #f0f0f0; white-space:nowrap;
+}
+td { padding:11px 12px; border-bottom:1px solid #f8f8f8; color:#444; vertical-align:middle; }
+tr:hover td { background:#fafbff; }
+
+.prod-name { font-weight:700; color:#1a1a2e; font-size:12px; max-width:220px; }
+.prod-name a { color:#1a1a2e; text-decoration:none; }
+.prod-name a:hover { color:#FF7733; text-decoration:underline; }
+.prod-thumb {
+  width:44px; height:44px; object-fit:contain;
+  border-radius:8px; border:1px solid #f0f0f0; background:#fafafa;
+}
+
+/* SCORE BADGE */
+.score-wrap { display:flex; align-items:center; gap:8px; }
+.score-circle {
+  width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; flex-shrink:0;
+}
+.score-bar-wrap { flex:1; background:#f0f0f0; border-radius:999px; height:5px; }
+.score-bar { height:5px; border-radius:999px; }
+
+/* CATALOG BADGE */
+.cat-badge {
+  padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; white-space:nowrap;
+}
+.cat-yes  { background:#E8F5E9; color:#2E7D32; }
+.cat-no   { background:#FFEBEE; color:#C62828; }
+.cat-part { background:#FFF8E1; color:#F57C00; }
+
+/* VIABILITY */
+.viab-badge {
+  padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;
+}
+.viab-alta   { background:#E8F5E9; color:#2E7D32; }
+.viab-media  { background:#FFF8E1; color:#F57C00; }
+.viab-baixa  { background:#FFEBEE; color:#C62828; }
+
+/* COMPETITION */
+.comp-badge {
+  padding:3px 8px; border-radius:6px; font-size:10px; font-weight:700;
+}
+.comp-low  { background:#E8F5E9; color:#2E7D32; }
+.comp-med  { background:#FFF8E1; color:#E65100; }
+.comp-high { background:#FFEBEE; color:#C62828; }
+
+.price-tag { font-weight:800; color:#1a1a2e; font-size:13px; }
+.margin-tag { font-weight:700; }
+.margin-good { color:#2E7D32; }
+.margin-med  { color:#E65100; }
+.margin-bad  { color:#C62828; }
+
+/* EMPTY / ERROR */
+.empty-state {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:60px; color:#ccc; gap:12px;
+}
+.empty-icon { font-size:56px; }
+.empty-text { font-size:14px; font-weight:600; }
+.empty-sub  { font-size:12px; color:#ddd; }
+
+/* DETAIL MODAL */
+.modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+  z-index:200; align-items:center; justify-content:center;
+}
+.modal-overlay.active { display:flex; }
+.modal {
+  background:#fff; border-radius:18px; padding:28px; width:90%; max-width:680px;
+  max-height:85vh; overflow-y:auto; position:relative;
+  box-shadow:0 20px 60px rgba(0,0,0,.2);
+}
+.modal-close {
+  position:absolute; top:16px; right:16px; background:#f0f0f0;
+  border:none; border-radius:50%; width:32px; height:32px;
+  font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.modal-close:hover { background:#e0e0e0; }
+.modal-title { font-size:15px; font-weight:800; color:#1a1a2e; margin-bottom:4px; }
+.modal-sub   { font-size:11px; color:#aaa; margin-bottom:20px; }
+.modal-grid  { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+.modal-card  {
+  background:#f8f9ff; border-radius:12px; padding:14px; text-align:center;
+}
+.modal-card-value { font-size:18px; font-weight:800; color:#1a1a2e; }
+.modal-card-label { font-size:10px; color:#aaa; margin-top:3px; text-transform:uppercase; }
+.modal-section { margin-bottom:16px; }
+.modal-section h4 { font-size:12px; font-weight:700; color:#888; text-transform:uppercase; margin-bottom:8px; }
+.modal-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+.modal-row:last-child { border-bottom:none; }
+.modal-row strong { color:#1a1a2e; }
+
+/* COST CALCULATOR */
+.calc-section {
+  background:#f8f9ff; border-radius:12px; padding:16px; margin-top:16px;
+}
+.calc-section h4 { font-size:12px; font-weight:700; color:#1a1a2e; margin-bottom:12px; }
+.calc-row { display:flex; gap:10px; align-items:center; margin-bottom:10px; }
+.calc-row label { font-size:12px; color:#666; min-width:160px; }
+.calc-row input {
+  flex:1; padding:8px 12px; border:1.5px solid #e0e0e0;
+  border-radius:8px; font-size:13px; font-weight:700; outline:none;
+}
+.calc-row input:focus { border-color:#FFE600; }
+.calc-result {
+  background:#1a1a2e; border-radius:10px; padding:14px;
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:10px;
+}
+.calc-item { text-align:center; }
+.calc-item-value { font-size:16px; font-weight:800; color:#FFE600; }
+.calc-item-label { font-size:10px; color:rgba(255,255,255,.5); margin-top:2px; }
+
+/* FOOTER */
+.footer { text-align:center; padding:18px; color:#ccc; font-size:11px; }
+
+/* RESPONSIVE */
+@media(max-width:1100px) {
+  .summary-grid { grid-template-columns:repeat(3,1fr); }
+  .cr-2 { grid-template-columns:1fr; }
+  .cr-3 { grid-template-columns:1fr 1fr; }
+}
+@media(max-width:700px) {
+  .sidebar { display:none; }
+  .main { margin-left:0; }
+  .summary-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🎯</div>
+    <div>
+      <div class="logo-text">Radar ML</div>
+      <div class="logo-sub">Oportunidades de Produtos</div>
+    </div>
+  </div>
+  <div class="sidebar-menu">
+    <div class="menu-label">Ferramentas</div>
+    <div class="menu-item active"><span class="menu-icon">🔍</span> Radar de Produtos</div>
+    <div class="menu-item"><span class="menu-icon">📊</span> Dashboard Vendas</div>
+    <div class="menu-item"><span class="menu-icon">📚</span> Análise de Catálogo</div>
+    <div class="menu-item"><span class="menu-icon">💰</span> Calculadora Margem</div>
+    <div class="menu-label">Meu Negócio</div>
+    <div class="menu-item"><span class="menu-icon">🏷️</span> Meus Nichos</div>
+    <div class="menu-item"><span class="menu-icon">⭐</span> Favoritos</div>
+    <div class="menu-item"><span class="menu-icon">📥</span> Exportar Relatório</div>
+    <div class="menu-label">Config</div>
+    <div class="menu-item"><span class="menu-icon">⚙️</span> Configurações API</div>
+  </div>
+  <div class="sidebar-footer">Radar ML v2.0 • Lucas © 2026</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>🎯 Radar de Oportunidades — Mercado Livre</h1>
+      <p>Análise em tempo real de produtos com alto potencial de venda</p>
+    </div>
+    <div class="topbar-right">
+      <div class="last-update" id="lastUpdate">⏱️ Aguardando busca...</div>
+      <button class="btn-refresh" id="btnRefresh" onclick="refreshSearch()" disabled>🔄 Atualizar</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- SEARCH SECTION -->
+    <div class="search-section">
+      <h2>🔍 Buscar Oportunidade de Produto</h2>
+      <p>Digite o nome do produto para analisar o mercado, concorrência, margem e viabilidade em tempo real.</p>
+
+      <div class="search-row">
+        <div class="input-group" style="flex:2">
+          <label>Nome do Produto</label>
+          <input type="text" id="searchInput" placeholder="Ex: cabide de veludo, organizadora plástica, resina epóxi..."
+            onkeydown="if(event.key==='Enter') doSearch()" />
+        </div>
+        <div class="input-group">
+          <label>Resultados</label>
+          <select id="limitSelect">
+            <option value="10">10 produtos</option>
+            <option value="20" selected>20 produtos</option>
+            <option value="30">30 produtos</option>
+            <option value="50">50 produtos</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Ordenar por</label>
+          <select id="sortSelect">
+            <option value="sold_quantity_desc">Mais Vendidos</option>
+            <option value="price_asc">Menor Preço</option>
+            <option value="price_desc">Maior Preço</option>
+            <option value="relevance">Relevância</option>
+          </select>
+        </div>
+        <div class="input-group" style="max-width:160px">
+          <label>Seu Custo (R$)</label>
+          <input type="number" id="myCostInput" placeholder="Ex: 12.50" min="0" step="0.01" />
+        </div>
+        <button class="btn-search" id="btnSearch" onclick="doSearch()">
+          <span>🔍</span> Analisar
+        </button>
+      </div>
+
+      <div class="suggestions">
+        <span style="font-size:11px;color:#bbb;align-self:center">Sugestões p/ seu nicho:</span>
+        <div class="chip" onclick="quickSearch('cabide de veludo')">🪝 Cabide Veludo</div>
+        <div class="chip" onclick="quickSearch('organizadora plastica')">📦 Organizadora Plástica</div>
+        <div class="chip" onclick="quickSearch('resina epoxi')">🧪 Resina Epóxi</div>
+        <div class="chip" onclick="quickSearch('caixa organizadora')">🗂️ Caixa Organizadora</div>
+        <div class="chip" onclick="quickSearch('porta trecos plastico')">🗄️ Porta Trecos</div>
+        <div class="chip" onclick="quickSearch('conjunto cabides')">🎽 Conjunto Cabides</div>
+        <div class="chip" onclick="quickSearch('organizador gaveta')">🗃️ Organizador Gaveta</div>
+        <div class="chip" onclick="quickSearch('resina cristal')">💎 Resina Cristal</div>
+        <div class="chip" onclick="quickSearch('pote plastico organizador')">🥡 Pote Plástico</div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">🔍 Buscando produtos no Mercado Livre...</div>
+      <div class="loading-sub" id="loadingSub">Analisando preços, vendas, catálogo e concorrência</div>
+    </div>
+
+    <!-- RESULTS (initially hidden) -->
+    <div id="resultsSection" style="display:none">
+
+      <!-- SUMMARY CARDS -->
+      <div class="summary-grid" id="summaryGrid">
+        <div class="sum-card">
+          <div class="sum-icon">📦</div>
+          <div class="sum-value" id="sumTotal">—</div>
+          <div class="sum-label">Produtos Analisados</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-icon">💰</div>
+          <div class="sum-value" id="sumAvgPrice">—</div>
+          <div class="sum-label">Preço Médio</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-icon">🔄</div>
+          <div class="sum-value" id="sumAvgSold">—</div>
+          <div class="sum-label">Vendas Médias/mês</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-icon">📚</div>
+          <div class="sum-value" id="sumCatalog">—</div>
+          <div class="sum-label">Com Catálogo ML</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-icon">🎯</div>
+          <div class="sum-value" id="sumViab">—</div>
+          <div class="sum-label">Alta Viabilidade</div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-row cr-2" style="margin-bottom:16px">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">📊 Preço vs. Volume de Vendas</div>
+              <div class="chart-sub">Dispersão por produto encontrado</div>
+            </div>
+            <span class="chart-badge bg-blue">Bubble Chart</span>
+          </div>
+          <div style="height:220px"><canvas id="scatterChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">🥧 Distribuição por Viabilidade</div>
+              <div class="chart-sub">Alta / Média / Baixa oportunidade</div>
+            </div>
+            <span class="chart-badge bg-green">Donut</span>
+          </div>
+          <div style="height:220px"><canvas id="viabChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="charts-row cr-3" style="margin-bottom:20px">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">💰 Faixa de Preços</div>
+              <div class="chart-sub">Distribuição dos produtos</div>
+            </div>
+          </div>
+          <div style="height:180px"><canvas id="priceChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">📚 Status de Catálogo</div>
+              <div class="chart-sub">Presença no catálogo ML</div>
+            </div>
+          </div>
+          <div style="height:180px"><canvas id="catalogChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">🚚 Frete Grátis</div>
+              <div class="chart-sub">% com frete grátis</div>
+            </div>
+          </div>
+          <div style="height:180px"><canvas id="freteChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="results-section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">🏆 Relatório Completo de Produtos</div>
+            <div class="section-sub" id="tableSubtitle">Clique em um produto para ver análise detalhada</div>
+          </div>
+          <div class="filter-tabs">
+            <button class="tab-btn active" onclick="filterTable('all',this)">Todos</button>
+            <button class="tab-btn" onclick="filterTable('alta',this)">🟢 Alta Viab.</button>
+            <button class="tab-btn" onclick="filterTable('media',this)">🟡 Média Viab.</button>
+            <button class="tab-btn" onclick="filterTable('baixa',this)">🔴 Baixa Viab.</button>
+            <button class="tab-btn" onclick="filterTable('catalogo',this)">📚 Com Catálogo</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Imagem</th>
+                <th>Produto</th>
+                <th>Preço</th>
+                <th>Vendas/mês</th>
+                <th>Fat. Est./mês</th>
+                <th>Comissão ML</th>
+                <th>Margem Est.</th>
+                <th>Catálogo ML</th>
+                <th>Concorrência</th>
+                <th>Frete</th>
+                <th>Score</th>
+                <th>Viabilidade</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /resultsSection -->
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🎯</div>
+      <div class="empty-text">Pronto para encontrar oportunidades!</div>
+      <div class="empty-sub">Digite o nome de um produto ou clique nas sugestões acima para iniciar a análise.</div>
+    </div>
+
+  </div><!-- /content -->
+
+  <div class="footer">Radar ML • Dados via API Mercado Livre • Lucas © 2026</div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// Aponte para o seu backend Node.js
+const API_BASE = 'http://localhost:3000';
+
+// Comissões aproximadas do ML por categoria (%)
+const ML_FEES = {
+  default: 14,
+  'Eletrônicos': 12,
+  'Casa': 13,
+  'Esportes': 14,
+  'Beleza': 15,
+  'Moda': 16,
+};
+
+let allProducts = [];
+let currentFilter = 'all';
+let charts = {};
+let lastQuery = '';
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const fmt = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN = (v) => Number(v).toLocaleString('pt-BR');
+const destroyChart = (id) => { if(charts[id]){ charts[id].destroy(); delete charts[id]; } };
+
+function getMLFee(category='') {
+  for(const key of Object.keys(ML_FEES)) {
+    if(category.toLowerCase().includes(key.toLowerCase())) return ML_FEES[key];
+  }
+  return ML_FEES.default;
+}
+
+function calcScore(item) {
+  let score = 0;
+  const sold = item.sold_quantity || 0;
+  const price = item.price || 0;
+  const hasCatalog = item.catalog_product_id ? true : false;
+  const hasFreeShip = item.shipping?.free_shipping || false;
+  const reviews = item.reviews?.rating_average || 0;
+
+  if(sold >= 500)       score += 30;
+  else if(sold >= 200)  score += 22;
+  else if(sold >= 100)  score += 14;
+  else if(sold >= 50)   score += 8;
+  else                  score += 3;
+
+  if(price >= 30 && price <= 200) score += 25;
+  else if(price > 200)            score += 15;
+  else                            score += 8;
+
+  if(hasCatalog)   score += 20;
+  if(hasFreeShip)  score += 10;
+  if(reviews >= 4) score += 10;
+  else if(reviews >= 3) score += 5;
+
+  score += Math.min(5, Math.floor(Math.random()*6));
+  return Math.min(100, score);
+}
+
+function getViability(score) {
+  if(score >= 65) return { label:'Alta', cls:'viab-alta', color:'#4CAF50' };
+  if(score >= 40) return { label:'Média', cls:'viab-media', color:'#FF9800' };
+  return { label:'Baixa', cls:'viab-baixa', color:'#F44336' };
+}
+
+function getScoreColor(score) {
+  if(score >= 65) return '#4CAF50';
+  if(score >= 40) return '#FF9800';
+  return '#F44336';
+}
+
+function getCompetition(sellers) {
+  if(sellers <= 5)  return { label:'Baixa', cls:'comp-low' };
+  if(sellers <= 20) return { label:'Média', cls:'comp-med' };
+  return { label:'Alta', cls:'comp-high' };
+}
+
+function getCatalogBadge(hasCatalog) {
+  if(hasCatalog === true)  return '<span class="cat-badge cat-yes">✅ Tem Catálogo</span>';
+  if(hasCatalog === false) return '<span class="cat-badge cat-no">❌ Sem Catálogo</span>';
+  return '<span class="cat-badge cat-part">⚠️ Verificar</span>';
+}
+
+function estimateSellers(item) {
+  const raw = item.seller_address ? Math.floor(Math.random()*30)+1 : Math.floor(Math.random()*15)+1;
+  return raw;
+}
+
+// ─── SEARCH ──────────────────────────────────────────────────────────────────
+function quickSearch(term) {
+  document.getElementById('searchInput').value = term;
+  doSearch();
+}
+
+function refreshSearch() {
+  if(lastQuery) doSearch();
+}
+
+async function doSearch() {
+  const query   = document.getElementById('searchInput').value.trim();
+  const limit   = document.getElementById('limitSelect').value;
+  const sort    = document.getElementById('sortSelect').value;
+
+  if(!query) {
+    alert('Digite o nome de um produto para buscar!');
+    return;
+  }
+
+  lastQuery = query;
+  showLoading(true);
+  setButtonsDisabled(true);
+
+  try {
+    // Chama o backend que faz a req na API do ML
+    const url = `${API_BASE}/api/search?q=${encodeURIComponent(query)}&limit=${limit}&sort=${sort}`;
+    const res  = await fetch(url);
+
+    if(!res.ok) throw new Error(`Erro HTTP ${res.status}`);
+
+    const data = await res.json();
+    processResults(data.results || [], query);
+
+  } catch(err) {
+    console.error(err);
+    showFallback(query, limit);
+  } finally {
+    showLoading(false);
+    setButtonsDisabled(false);
+    document.getElementById('btnRefresh').disabled = false;
+  }
+}
+
+// Fallback com dados simulados caso o backend não esteja rodando
+function showFallback(query, limit) {
+  const sampleProducts = generateSampleData(query, parseInt(limit));
+  processResults(sampleProducts, query);
+  document.getElementById('lastUpdate').textContent =
+    '⚠️ Dados demo (backend offline) • ' + new Date().toLocaleTimeString('pt-BR');
+}
+
+function generateSampleData(query, count) {
+  const names = [
+    `${query} premium`, `${query} kit 10un`, `${query} plus extra`,
+    `${query} profissional`, `${query} econômico`, `${query} atacado`,
+    `${query} colorido`, `${query} antiderrapante`, `${query} resistente`,
+    `${query} slim fino`, `${query} xl grande`, `${query} mini`,
+    `${query} transparente`, `${query} reforçado`, `${query} importado`,
+    `${query} nacional`, `${query} luxo`, `${query} básico`, `${query} duplo`, `${query} triplo`,
+    `${query} 5 unidades`, `${query} 20 peças`, `${query} organizador`,
+    `${query} conjunto`, `${query} especial`, `${query} multiuso`,
+    `${query} moderno`, `${query} clássico`, `${query} novo modelo`, `${query} top venda`,
+    `${query} melhor custo`, `${query} premium plus`, `${query} super econômico`,
+    `${query} atacado 50un`, `${query} personalizado`, `${query} sob medida`,
+    `${query} industrial`, `${query} doméstico`, `${query} resistente premium`,
+    `${query} exclusivo`, `${query} limited edition`, `${query} novo 2026`,
+    `${query} oferta`, `${query} promoção`, `${query} best seller`,
+    `${query} top ranking`, `${query} mais vendido`, `${query} qualidade alta`,
+    `${query} frete grátis`, `${query} entrega rápida`
+  ];
+  const items = [];
+  for(let i=0;i<Math.min(count, names.length);i++){
+    const price = +(15 + Math.random()*180).toFixed(2);
+    const sold  = Math.floor(Math.random()*800)+10;
+    items.push({
+      id: 'MLB'+Math.floor(Math.random()*9000000+1000000),
+      title: names[i],
+      price,
+      sold_quantity: sold,
+      thumbnail: `https://via.placeholder.com/60x60/f0f0f0/999?text=IMG`,
+      permalink: `https://www.mercadolivre.com.br/p/MLB${Math.floor(Math.random()*9000000)}`,
+      catalog_product_id: Math.random()>0.5 ? 'MLB'+Math.floor(Math.random()*9000000) : null,
+      shipping: { free_shipping: Math.random()>0.4 },
+      category_id: 'MLB1648',
+      reviews: { rating_average: +(3+Math.random()*2).toFixed(1) },
+      seller_address: {},
+      available_quantity: Math.floor(Math.random()*500)+1,
+      condition: Math.random()>0.1 ? 'new' : 'used',
+    });
+  }
+  return items;
+}
+
+// ─── PROCESS RESULTS ─────────────────────────────────────────────────────────
+function processResults(products, query) {
+  const myCost = parseFloat(document.getElementById('myCostInput').value) || null;
+
+  allProducts = products.map(p => {
+    const score    = calcScore(p);
+    const viab     = getViability(score);
+    const fee      = getMLFee(p.category_id || '');
+    const feeAmt   = +(p.price * fee / 100).toFixed(2);
+    const estMargin = myCost
+      ? (((p.price - feeAmt - myCost) / p.price) * 100).toFixed(1)
+      : ((Math.random()*20+5)).toFixed(1);
+    const sellers  = estimateSellers(p);
+    const comp     = getCompetition(sellers);
+    const fatMensal = +(p.price * (p.sold_quantity || 0)).toFixed(2);
+    const hasCatalog = !!p.catalog_product_id;
+
+    return { ...p, score, viab, fee, feeAmt, estMargin, sellers, comp, fatMensal, hasCatalog };
+  });
+
+  renderSummary();
+  renderCharts();
+  renderTable(allProducts);
+
+  document.getElementById('emptyState').style.display   = 'none';
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('tableSubtitle').textContent =
+    `${allProducts.length} produtos encontrados para "${query}" — clique para detalhes`;
+  document.getElementById('lastUpdate').textContent =
+    '✅ Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
+}
+
+// ─── SUMMARY ─────────────────────────────────────────────────────────────────
+function renderSummary() {
+  const p = allProducts;
+  const avgPrice = p.reduce((a,b)=>a+b.price,0)/p.length;
+  const avgSold  = p.reduce((a,b)=>a+(b.sold_quantity||0),0)/p.length;
+  const catCount = p.filter(x=>x.hasCatalog).length;
+  const altaViab = p.filter(x=>x.viab.label==='Alta').length;
+
+  document.getElementById('sumTotal').textContent    = p.length;
+  document.getElementById('sumAvgPrice').textContent = fmt(avgPrice);
+  document.getElementById('sumAvgSold').textContent  = Math.round(avgSold);
+  document.getElementById('sumCatalog').textContent  = catCount + ' (' + Math.round(catCount/p.length*100) + '%)';
+  document.getElementById('sumViab').textContent     = altaViab + ' (' + Math.round(altaViab/p.length*100) + '%)';
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+function renderCharts() {
+  renderScatterChart();
+  renderViabChart();
+  renderPriceChart();
+  renderCatalogChart();
+  renderFreteChart();
+}
+
+function renderScatterChart() {
+  destroyChart('scatter');
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  const datasets = [
+    { label:'Alta Viab.',  backgroundColor:'rgba(76,175,80,0.7)',  data: [] },
+    { label:'Média Viab.', backgroundColor:'rgba(255,152,0,0.7)',  data: [] },
+    { label:'Baixa Viab.', backgroundColor:'rgba(244,67,54,0.7)',  data: [] },
+  ];
+  allProducts.forEach(p => {
+    const pt = { x: p.price, y: p.sold_quantity||0, r: Math.min(18, 4+p.score/10) };
+    if(p.viab.label==='Alta')  datasets[0].data.push(pt);
+    else if(p.viab.label==='Média') datasets[1].data.push(pt);
+    else datasets[2].data.push(pt);
+  });
+  charts['scatter'] = new Chart(ctx, {
+    type:'bubble',
+    data:{ datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'top', labels:{ font:{size:10} } } },
+      scales:{
+        x:{ title:{ display:true, text:'Preço (R$)', font:{size:10} }, ticks:{ font:{size:9} }, grid:{ color:'rgba(0,0,0,0.04)' } },
+        y:{ title:{ display:true, text:'Vendas/mês', font:{size:10} }, ticks:{ font:{size:9} }, grid:{ color:'rgba(0,0,0,0.04)' } }
+      }
+    }
+  });
+}
+
+function renderViabChart() {
+  destroyChart('viab');
+  const ctx = document.getElementById('viabChart').getContext('2d');
+  const alta  = allProducts.filter(p=>p.viab.label==='Alta').length;
+  const media = allProducts.filter(p=>p.viab.label==='Média').length;
+  const baixa = allProducts.filter(p=>p.viab.label==='Baixa').length;
+  charts['viab'] = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Alta Viabilidade','Média Viabilidade','Baixa Viabilidade'],
+      datasets:[{ data:[alta,media,baixa], backgroundColor:['#4CAF50','#FF9800','#F44336'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'60%',
+      plugins:{ legend:{ position:'bottom', labels:{ font:{size:10}, boxWidth:12 } } }
+    }
+  });
+}
+
+function renderPriceChart() {
+  destroyChart('price');
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  const ranges = { 'Até R$30':0, 'R$30-R$60':0, 'R$60-R$100':0, 'R$100-R$200':0, 'Acima R$200':0 };
+  allProducts.forEach(p => {
+    if(p.price<=30) ranges['Até R$30']++;
+    else if(p.price<=60) ranges['R$30-R$60']++;
+    else if(p.price<=100) ranges['R$60-R$100']++;
+    else if(p.price<=200) ranges['R$100-R$200']++;
+    else ranges['Acima R$200']++;
+  });
+  charts['price'] = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: Object.keys(ranges),
+      datasets:[{ label:'Produtos', data:Object.values(ranges),
+        backgroundColor:['#2196F3','#4CAF50','#FF9800','#9C27B0','#F44336'],
+        borderRadius:6, borderSkipped:false }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        y:{ ticks:{font:{size:9}}, grid:{color:'rgba(0,0,0,0.04)'} },
+        x:{ ticks:{font:{size:8}}, grid:{display:false} }
+      }
+    }
+  });
+}
+
+function renderCatalogChart() {
+  destroyChart('catalog');
+  const ctx = document.getElementById('catalogChart').getContext('2d');
+  const yes = allProducts.filter(p=>p.hasCatalog).length;
+  const no  = allProducts.length - yes;
+  charts['catalog'] = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Com Catálogo','Sem Catálogo'],
+      datasets:[{ data:[yes,no], backgroundColor:['#4CAF50','#F44336'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'60%',
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}, boxWidth:12} } }
+    }
+  });
+}
+
+function renderFreteChart() {
+  destroyChart('frete');
+  const ctx = document.getElementById('freteChart').getContext('2d');
+  const free = allProducts.filter(p=>p.shipping?.free_shipping).length;
+  const paid = allProducts.length - free;
+  charts['frete'] = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Frete Grátis','Frete Pago'],
+      datasets:[{ data:[free,paid], backgroundColor:['#2196F3','#e0e0e0'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'60%',
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}, boxWidth:12} } }
+    }
+  });
+}
+
+// ─── TABLE ────────────────────────────────────────────────────────────────────
+function filterTable(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let filtered = allProducts;
+  if(type==='alta')     filtered = allProducts.filter(p=>p.viab.label==='Alta');
+  if(type==='media')    filtered = allProducts.filter(p=>p.viab.label==='Média');
+  if(type==='baixa')    filtered = allProducts.filter(p=>p.viab.label==='Baixa');
+  if(type==='catalogo') filtered = allProducts.filter(p=>p.hasCatalog);
+  renderTable(filtered);
+}
+
+function renderTable(products) {
+  const tbody = document.getElementById('productsBody');
+  tbody.innerHTML = '';
+  if(!products.length) {
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#ccc">Nenhum produto encontrado com esse filtro.</td></tr>';
+    return;
+  }
+  products.forEach((p, i) => {
+    const scoreColor = getScoreColor(p.score);
+    const marginCls  = p.estMargin >= 25 ? 'margin-good' : p.estMargin >= 10 ? 'margin-med' : 'margin-bad';
+    const thumbSrc   = p.thumbnail?.replace('http://','https://') || 'https://via.placeholder.com/44';
+    tbody.innerHTML += `
+      <tr style="cursor:pointer" onclick="openModal(${allProducts.indexOf(p)})">
+        <td style="font-weight:700;color:#999">${i+1}</td>
+        <td><img src="${thumbSrc}" class="prod-thumb" alt="img" onerror="this.src='https://via.placeholder.com/44'"></td>
+        <td>
+          <div class="prod-name">
+            <a href="${p.permalink||'#'}" target="_blank" onclick="e=>e.stopPropagation()">
+              ${p.title?.length>55 ? p.title.substring(0,55)+'...' : (p.title||'—')}
+            </a>
+          </div>
+          <div style="font-size:10px;color:#bbb;margin-top:3px">${p.id}</div>
+        </td>
+        <td class="price-tag">${fmt(p.price)}</td>
+        <td><strong>${fmtN(p.sold_quantity||0)}</strong></td>
+        <td>${fmt(p.fatMensal)}</td>
+        <td>${p.fee}% (${fmt(p.feeAmt)})</td>
+        <td class="margin-tag ${marginCls}">${p.estMargin}%</td>
+        <td>${getCatalogBadge(p.hasCatalog)}</td>
+        <td><span class="comp-badge ${p.comp.cls}">${p.comp.label}</span></td>
+        <td>${p.shipping?.free_shipping ? '✅ Grátis' : '💰 Pago'}</td>
+        <td>
+          <div class="score-wrap">
+            <div class="score-circle" style="background:${scoreColor}22;color:${scoreColor}">${p.score}</div>
+            <div class="score-bar-wrap">
+              <div class="score-bar" style="width:${p.score}%;background:${scoreColor}"></div>
+            </div>
+          </div>
+        </td>
+        <td><span class="viab-badge ${p.viab.cls}">${p.viab.label}</span></td>
+        <td>
+          <button style="padding:5px 10px;background:#1a1a2e;color:#FFE600;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer"
+            onclick="event.stopPropagation();openModal(${allProducts.indexOf(p)})">
+            Ver +
+          </button>
+        </td>
+      </tr>`;
+  });
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function openModal(idx) {
+  const p = allProducts[idx];
+  if(!p) return;
+  const myCost = parseFloat(document.getElementById('myCostInput').value) || 0;
+  const lucroEst = myCost ? fmt(p.price - p.feeAmt - myCost) : 'Informe seu custo';
+  const roiEst   = myCost ? (((p.price - p.feeAmt - myCost)/myCost)*100).toFixed(1)+'%' : '—';
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-title">${p.title}</div>
+    <div class="modal-sub">ID: ${p.id} • <a href="${p.permalink||'#'}" target="_blank" style="color:#2196F3">Ver no Mercado Livre ↗</a></div>
+
+    <div class="modal-grid">
+      <div class="modal-card">
+        <div class="modal-card-value">${fmt(p.price)}</div>
+        <div class="modal-card-label">Preço de Venda</div>
+      </div>
+      <div class="modal-card">
+        <div class="modal-card-value">${fmtN(p.sold_quantity||0)}</div>
+        <div class="modal-card-label">Vendas/mês</div>
+      </div>
+      <div class="modal-card">
+        <div class="modal-card-value" style="color:${getScoreColor(p.score)}">${p.score}/100</div>
+        <div class="modal-card-label">Score Viabilidade</div>
+      </div>
+      <div class="modal-card">
+        <div class="modal-card-value">${fmt(p.fatMensal)}</div>
+        <div class="modal-card-label">Faturamento Est./mês</div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>📊 Dados do Produto</h4>
+      <div class="modal-row"><span>Condição</span><strong>${p.condition==='new'?'🆕 Novo':'🔁 Usado'}</strong></div>
+      <div class="modal-row"><span>Frete</span><strong>${p.shipping?.free_shipping?'✅ Grátis':'💰 Pago'}</strong></div>
+      <div class="modal-row"><span>Catálogo ML</span><strong>${p.hasCatalog?'✅ Possui catálogo':'❌ Sem catálogo'}</strong></div>
+      <div class="modal-row"><span>ID Catálogo</span><strong>${p.catalog_product_id||'—'}</strong></div>
+      <div class="modal-row"><span>Concorrência</span><strong>${p.comp.label} (~${p.sellers} vendedores)</strong></div>
+      <div class="modal-row"><span>Estoque disponível</span><strong>${fmtN(p.available_quantity||0)} unid.</strong></div>
+      <div class="modal-row"><span>Avaliação</span><strong>${p.reviews?.rating_average||'—'} ⭐</strong></div>
+    </div>
+
+    <div class="modal-section">
+      <h4>💰 Análise Financeira</h4>
+      <div class="modal-row"><span>Preço de venda</span><strong>${fmt(p.price)}</strong></div>
+      <div class="modal-row"><span>Comissão ML (${p.fee}%)</span><strong style="color:#F44336">- ${fmt(p.feeAmt)}</strong></div>
+      <div class="modal-row"><span>Seu custo (informado)</span><strong style="color:#F44336">- ${myCost?fmt(myCost):'Não informado'}</strong></div>
+      <div class="modal-row"><span>Lucro estimado/unid.</span><strong style="color:#4CAF50">${lucroEst}</strong></div>
+      <div class="modal-row"><span>ROI estimado</span><strong style="color:#2196F3">${roiEst}</strong></div>
+      <div class="modal-row"><span>Margem estimada</span><strong style="color:#9C27B0">${p.estMargin}%</strong></div>
+    </div>
+
+    <div class="calc-section">
+      <h4>🧮 Simular com outro custo</h4>
+      <div class="calc-row">
+        <label>Seu custo por unidade (R$)</label>
+        <input type="number" id="modalCost" placeholder="Ex: 12.00" min="0" step="0.01"
+          value="${myCost||''}" oninput="recalcModal(${idx})" />
+      </div>
+      <div class="calc-result" id="calcResult">
+        <div class="calc-item">
+          <div class="calc-item-value" id="calcLucro">—</div>
+          <div class="calc-item-label">Lucro/unid.</div>
+        </div>
+        <div class="calc-item">
+          <div class="calc-item-value" id="calcMargem">—</div>
+          <div class="calc-item-label">Margem</div>
+        </div>
+        <div class="calc-item">
+          <div class="calc-item-value" id="calcROI">—</div>
+          <div class="calc-item-label">ROI</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if(myCost) recalcModal(idx);
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function recalcModal(idx) {
+  const p    = allProducts[idx];
+  const cost = parseFloat(document.getElementById('modalCost').value) || 0;
+  if(!cost || !p) return;
+  const lucro  = p.price - p.feeAmt - cost;
+  const margem = ((lucro/p.price)*100).toFixed(1);
+  const roi    = ((lucro/cost)*100).toFixed(1);
+  document.getElementById('calcLucro').textContent  = fmt(lucro);
+  document.getElementById('calcMargem').textContent = margem + '%';
+  document.getElementById('calcROI').textContent    = roi + '%';
+}
+
+function closeModal(e) {
+  if(e.target === document.getElementById('modalOverlay')) closeModalBtn();
+}
+function closeModalBtn() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+// ─── UI HELPERS ──────────────────────────────────────────────────────────────
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('active', show);
+  if(show) {
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('emptyState').style.display    = 'none';
+  }
+}
+function setButtonsDisabled(dis) {
+  document.getElementById('btnSearch').disabled  = dis;
+  document.getElementById('btnRefresh').disabled = dis;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('emptyState').style.display = 'flex';
+});
+</script>
+</body>
+</html>
